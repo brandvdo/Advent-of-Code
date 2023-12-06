@@ -3,56 +3,91 @@ import * as readline from 'readline';
 
 const filePath = 'input.txt';
 
-interface NumberData {
-    value: number;
-    lineIndex: number;
-    startChar: number;
-    endChar: number;
+interface GameData {
+    winningNumbers : number[];
+    gameNumbers : number[];
+    cardNumber : number;
+    cardScore : number;
+    matchCount : number;
+    cardCount : number;
 }
 
-readFileLineByLine(filePath)
+Main(filePath)
   .then(() => console.log('File reading completed'))
   .catch((err) => console.error('Error reading file:', err)); 
 
 
 
 //Read the input file
-async function readFileLineByLine(filePath: string): Promise<void> {
-    let total = 0;
-    let lineArray : string[] = [];
+async function Main(filePath: string): Promise<void> {
+    let scoreTotal = 0;
+    let cardCount = 0;
+    const gameStrArray : string[]= [];
+    let gameObjArray : GameData[] = [];
     const fileStream = fs.createReadStream(filePath);
-    const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity,
-    });
+    const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity,});
 
-    //Place all lines of input into an array
+    //Push games to an array and get Part 1 total
     for await (const line of rl) {
-        total+=checkCardPoints(line)
+        gameStrArray.push(line);
+        gameObjArray.push(createGameList(line,gameStrArray.length-1))
     }
 
-   
+    //Part 1 total
+    gameObjArray.forEach(game =>{
+        scoreTotal+=game.cardScore;
+    })
 
-    console.log("Total: " + total)
+    
+    gameObjArray = updateGameList(gameObjArray);
+
+
+    gameObjArray.forEach(game => {
+        cardCount+=game.cardCount;
+    })
+
+    //console.log(gameObjArray)
+    console.log("Part 1 Total: " + scoreTotal)
+    console.log("Part 2 Total: " + cardCount)
+}
+
+function updateGameList(gameList: GameData[]): GameData[] {
+    const newGameList: GameData[] = [...gameList];
+
+    gameList.forEach(game => {
+        
+        let nextCardNumber = game.cardNumber;
+        if(nextCardNumber > gameList.length){
+            nextCardNumber = 0
+        }
+        for (let i = 1; i <= game.matchCount; i++) {
+            newGameList[nextCardNumber] = {
+                ...newGameList[nextCardNumber],
+                cardCount: (newGameList[nextCardNumber].cardCount + newGameList[nextCardNumber - i].cardCount)
+            }
+            nextCardNumber++;
+        }
+    }); 
+
+    return newGameList;
 }
 
 
-
-function checkCardPoints(game : string) : number{
-    let score = 0;
-
+function createGameList(line : string, i : number) : GameData {
     let winningNumbers : number[] = []
     let gameNumbers : number[] = []
+    let score = 0;
+    let matchCount = 0;
 
     //Get Winning Numbers
-    let temp : string[] = game.split('|')[0].split(":")[1].split(" ")
+    let temp : string[] = line.split('|')[0].split(":")[1].split(" ")
     temp.forEach(str =>{
         if(str !="")
             winningNumbers.push(parseInt(str,10))
     })
 
-    //Get Winning Numbers
-    temp = game.split('|')[1].split(" ")
+    //Get Game Numbers
+    temp = line.split('|')[1].split(" ")
     temp.forEach(str =>{
         if(str !="")
         gameNumbers.push(parseInt(str,10))
@@ -62,11 +97,22 @@ function checkCardPoints(game : string) : number{
         if(gameNumbers.includes(winNumb)){
             if(score == 0){
                 score = 1
+                matchCount++;
             }else{
                 score = score*2
+                matchCount++;
             }
         }
     })
     
-    return score;
+    const game = {
+        winningNumbers:winningNumbers,
+        gameNumbers:gameNumbers,
+        cardNumber: i + 1,
+        cardScore: score,
+        matchCount: matchCount,
+        cardCount: 1
+    }
+
+    return game;
 }

@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -42,28 +53,36 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var readline = require("readline");
 var filePath = 'input.txt';
-readFileLineByLine(filePath)
+Main(filePath)
     .then(function () { return console.log('File reading completed'); })
     .catch(function (err) { return console.error('Error reading file:', err); });
 //Read the input file
-function readFileLineByLine(filePath) {
+function Main(filePath) {
     var _a, e_1, _b, _c;
     return __awaiter(this, void 0, void 0, function () {
-        var total, lineArray, fileStream, rl, _d, rl_1, rl_1_1, line, e_1_1;
+        var scoreTotal, cardCount, gameStrArray, gameObjArray, fileStream, rl, _d, rl_1, rl_1_1, line, e_1_1;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
-                    total = 0;
-                    lineArray = [];
+                    scoreTotal = 0;
+                    cardCount = 0;
+                    gameStrArray = [];
+                    gameObjArray = [];
                     fileStream = fs.createReadStream(filePath);
-                    rl = readline.createInterface({
-                        input: fileStream,
-                        crlfDelay: Infinity,
-                    });
+                    rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity, });
                     _e.label = 1;
                 case 1:
                     _e.trys.push([1, 6, 7, 12]);
@@ -75,7 +94,8 @@ function readFileLineByLine(filePath) {
                     _c = rl_1_1.value;
                     _d = false;
                     line = _c;
-                    total += checkCardPoints(line);
+                    gameStrArray.push(line);
+                    gameObjArray.push(createGameList(line, gameStrArray.length - 1));
                     _e.label = 4;
                 case 4:
                     _d = true;
@@ -98,24 +118,49 @@ function readFileLineByLine(filePath) {
                     return [7 /*endfinally*/];
                 case 11: return [7 /*endfinally*/];
                 case 12:
-                    console.log("Total: " + total);
+                    //Part 1 total
+                    gameObjArray.forEach(function (game) {
+                        scoreTotal += game.cardScore;
+                    });
+                    gameObjArray = updateGameList(gameObjArray);
+                    gameObjArray.forEach(function (game) {
+                        cardCount += game.cardCount;
+                    });
+                    //console.log(gameObjArray)
+                    console.log("Part 1 Total: " + scoreTotal);
+                    console.log("Part 2 Total: " + cardCount);
                     return [2 /*return*/];
             }
         });
     });
 }
-function checkCardPoints(game) {
-    var score = 0;
+function updateGameList(gameList) {
+    var newGameList = __spreadArray([], gameList, true);
+    gameList.forEach(function (game) {
+        var nextCardNumber = game.cardNumber; // Start from game.cardNumber
+        if (nextCardNumber > gameList.length) {
+            nextCardNumber = 0;
+        }
+        for (var i = 1; i <= game.matchCount; i++) {
+            newGameList[nextCardNumber] = __assign(__assign({}, newGameList[nextCardNumber]), { cardCount: (newGameList[nextCardNumber].cardCount + newGameList[nextCardNumber - i].cardCount) });
+            nextCardNumber++;
+        }
+    });
+    return newGameList;
+}
+function createGameList(line, i) {
     var winningNumbers = [];
     var gameNumbers = [];
+    var score = 0;
+    var matchCount = 0;
     //Get Winning Numbers
-    var temp = game.split('|')[0].split(":")[1].split(" ");
+    var temp = line.split('|')[0].split(":")[1].split(" ");
     temp.forEach(function (str) {
         if (str != "")
             winningNumbers.push(parseInt(str, 10));
     });
-    //Get Winning Numbers
-    temp = game.split('|')[1].split(" ");
+    //Get Game Numbers
+    temp = line.split('|')[1].split(" ");
     temp.forEach(function (str) {
         if (str != "")
             gameNumbers.push(parseInt(str, 10));
@@ -124,11 +169,21 @@ function checkCardPoints(game) {
         if (gameNumbers.includes(winNumb)) {
             if (score == 0) {
                 score = 1;
+                matchCount++;
             }
             else {
                 score = score * 2;
+                matchCount++;
             }
         }
     });
-    return score;
+    var game = {
+        winningNumbers: winningNumbers,
+        gameNumbers: gameNumbers,
+        cardNumber: i + 1,
+        cardScore: score,
+        matchCount: matchCount,
+        cardCount: 1
+    };
+    return game;
 }

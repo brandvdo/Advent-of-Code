@@ -1,0 +1,13 @@
+{
+  "name": "Day 3",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "tsc index.tsx && node index.js"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "@types/node": "^20.10.3"
+  }
+}
